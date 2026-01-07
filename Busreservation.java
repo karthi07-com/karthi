@@ -1,6 +1,7 @@
 import java.util.*;
 import java.sql.*;
 
+
 /*
  * MODELS
  */
@@ -217,9 +218,6 @@ class ReservationService {
     }
 }
 
-/*
- * CONTROLLER
- */
 public class Busreservation {
 
     static Scanner sc = new Scanner(System.in);
@@ -385,18 +383,5 @@ static void createAdmin() {
                 System.out.println("Error: " + e);
             }
         }
-    }
-}
-
-/*
- * DB HELPER
- */
-class DB {
-    public static Connection getConnection() throws Exception {
-        return DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/busdb",
-                "root",          // change if needed
-                ""      
-        );
     }
 }
