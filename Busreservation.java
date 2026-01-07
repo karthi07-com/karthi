@@ -1,10 +1,6 @@
 import java.util.*;
 import java.sql.*;
 
-
-/*
- * MODELS
- */
 class Bus {
     int busNo;
     String from;
@@ -22,7 +18,7 @@ class Bus {
 class Booking {
     int id;
     String name;
-    String location;
+    String location;   // <-- here location means TO location
     int seats;
     String date;
 
@@ -34,9 +30,6 @@ class Booking {
     }
 }
 
-/*
- * SERVICE
- */
 class ReservationService {
 
     public void addBus(Bus bus) throws Exception {
@@ -100,18 +93,20 @@ class ReservationService {
         con.close();
     }
 
+    // ✔ BOOK BASED ON TO LOCATION
     public void bookTicket(Booking booking) throws Exception {
         var con = DB.getConnection();
         con.setAutoCommit(false);
 
         try {
+            // 🔹 Check seats using TO CITY
             var pst = con.prepareStatement(
-                    "SELECT seats FROM buses WHERE fromCity=? FOR UPDATE");
+                    "SELECT seats FROM buses WHERE toCity=? FOR UPDATE");
             pst.setString(1, booking.location);
             var rs = pst.executeQuery();
 
             if (!rs.next()) {
-                System.out.println("Bus not found!");
+                System.out.println("Bus not found for this destination!");
                 return;
             }
 
@@ -135,8 +130,9 @@ class ReservationService {
             insert.setString(5, pnr);
             insert.executeUpdate();
 
+            // 🔹 Reduce seats using TO CITY
             var update = con.prepareStatement(
-                    "UPDATE buses SET seats=seats-? WHERE fromCity=?");
+                    "UPDATE buses SET seats=seats-? WHERE toCity=?");
             update.setInt(1, booking.seats);
             update.setString(2, booking.location);
             update.executeUpdate();
@@ -163,11 +159,11 @@ class ReservationService {
         while (rs.next()) {
             System.out.println(
                     "ID: " + rs.getInt("id") +
-                    ", Passenger: " + rs.getString("passengerName") +
-                    ", Location: " + rs.getString("location") +
-                    ", Date: " + rs.getString("travelDate") +
-                    ", PNR: " + rs.getString("pnr") +
-                    ", Seats: " + rs.getInt("seatsBooked"));
+                            ", Passenger: " + rs.getString("passengerName") +
+                            ", Location: " + rs.getString("location") +
+                            ", Date: " + rs.getString("travelDate") +
+                            ", PNR: " + rs.getString("pnr") +
+                            ", Seats: " + rs.getInt("seatsBooked"));
         }
         con.close();
     }
@@ -184,9 +180,9 @@ class ReservationService {
         while (rs.next()) {
             System.out.println(
                     "Passenger: " + rs.getString("passengerName") +
-                    ", Location: " + rs.getString("location") +
-                    ", Seats: " + rs.getInt("seatsBooked") +
-                    ", PNR: " + rs.getString("pnr"));
+                            ", Location: " + rs.getString("location") +
+                            ", Seats: " + rs.getInt("seatsBooked") +
+                            ", PNR: " + rs.getString("pnr"));
         }
         con.close();
     }
@@ -208,7 +204,7 @@ class ReservationService {
         con.createStatement().executeUpdate("DELETE FROM bookings WHERE id=" + id);
 
         var ups = con.prepareStatement(
-                "UPDATE buses SET seats=seats+? WHERE fromCity=?");
+                "UPDATE buses SET seats=seats+? WHERE toCity=?");
         ups.setInt(1, booked);
         ups.setString(2, loc);
         ups.executeUpdate();
@@ -235,41 +231,39 @@ public class Busreservation {
         }
     }
 
-static void createAdmin() {
-    try (Connection con = DB.getConnection()) {
+    static void createAdmin() {
+        try (Connection con = DB.getConnection()) {
 
-        String createTable = """
-            CREATE TABLE IF NOT EXISTS admins (
-                id INT PRIMARY KEY AUTO_INCREMENT,
-                username VARCHAR(50) UNIQUE,
-                password VARCHAR(100)
-            )
-        """;
+            String createTable = """
+                    CREATE TABLE IF NOT EXISTS admins (
+                        id INT PRIMARY KEY AUTO_INCREMENT,
+                        username VARCHAR(50) UNIQUE,
+                        password VARCHAR(100)
+                    )
+                    """;
 
-        con.createStatement().execute(createTable);
+            con.createStatement().execute(createTable);
 
-        System.out.print("Enter admin username: ");
-        String username = sc.next();
+            System.out.print("Enter admin username: ");
+            String username = sc.next();
 
-        System.out.print("Enter admin password: ");
-        String pass = sc.next();
+            System.out.print("Enter admin password: ");
+            String pass = sc.next();
 
-        PreparedStatement ps = con.prepareStatement(
-                "INSERT INTO admins (username, password) VALUES (?, ?)"
-        );
+            PreparedStatement ps = con.prepareStatement(
+                    "INSERT INTO admins (username, password) VALUES (?, ?)");
 
-        ps.setString(1, username);
-        ps.setString(2, pass);
-        ps.executeUpdate();
+            ps.setString(1, username);
+            ps.setString(2, pass);
+            ps.executeUpdate();
 
-        System.out.println("Admin saved to database!");
+            System.out.println("Admin saved to database!");
 
-    } catch (Exception e) {
-        System.out.println("DB Error: " + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("DB Error: " + e.getMessage());
+        }
     }
-}
 
-    // LOGIN ADMIN (CHECK DB)
     static void loginAdmin() {
         try {
             System.out.print("Admin username: ");
@@ -341,7 +335,7 @@ static void createAdmin() {
                         sc.nextLine();
                         System.out.print("Passenger Name: ");
                         String name = sc.nextLine();
-                        System.out.print("Location: ");
+                        System.out.print("Location (Destination): ");
                         String loc = sc.nextLine();
                         System.out.print("Travel Date (YYYY-MM-DD): ");
                         String date = sc.nextLine();
